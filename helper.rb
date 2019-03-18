@@ -3,9 +3,17 @@
 require 'rubygems/package'
 require 'zlib'
 require "open-uri"
-class Main
+
+a = Gem::Package::TarHeader
+def a.strict_oct(str)
+  return str.oct if str =~ /\A[0-7]*\z/
+  return str.to_i(8)
+end
+
+module Helper
   def extract_unitypackage(file, dest)
     gzip_reader = Zlib::GzipReader.open(open(file))
+
     tar_reader = Gem::Package::TarReader.new(gzip_reader)
 
     files = []
@@ -38,15 +46,15 @@ class Main
     gzip_reader.close
   end
 
-  def main
-    version_str = ARGV[0]
-    version = Gem::Version.new(version_str) rescue Gem::Version.new(version_str[1..-1])
-
-    extract_unitypackage("https://github.com/svermeulen/Zenject/releases/download/v#{version}/Zenject.v#{version}.unitypackage", "tmp")
-
-    puts `mv tmp/Assets/Plugins/Zenject/* ./`
-    puts `rm -rf tmp`
+  def gen_meta(guid)
+    <<"EOS"
+fileFormatVersion: 2
+guid: #{guid}
+TextScriptImporter:
+  externalObjects: {}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+EOS
   end
 end
-
-Main.new.main
