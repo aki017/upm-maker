@@ -108,6 +108,52 @@ class App < Thor
 
     puts `cd UniRx.Async && git add . && git commit -m "Update #{version}" && git tag -f v#{version} && git push -f origin v#{version}`
   end
+
+  desc "msgpack", "desc"
+  def msgpack(version, old_version, url=nil)
+    if version[0] == "v"
+      version = version[1..-1]
+    end
+
+    if old_version[0] != "v"
+      old_version = "v"+old_version
+    end
+
+    puts `rm -rf tmp`
+    # url ||= "https://github.com/neuecc/MessagePack-CSharp/releases/download/v#{version}/MessagePack.Unity.#{version}.zip"
+    url ||= "https://github.com/neuecc/MessagePack-CSharp/releases/download/v#{version}/MessagePack.Unity.#{version}.unitypackage"
+    if url.end_with?(".zip")
+      extract_zipped_unitypackage(url, "tmp")
+    else
+      extract_unitypackage(url, "tmp")
+    end
+
+
+    puts `rm -rf MessagePack`
+    puts `git clone git@github.com:aki017/MessagePack-CSharp-upm.git MessagePack`
+    puts `rm -rf MessagePack/*`
+    puts `mv tmp/Assets/Scripts/MessagePack/* ./MessagePack/`
+    puts `rm -rf tmp`
+    File.write "MessagePack/package.json", JSON.generate({
+      "name": "info.aki017.msgpack",
+      "displayName": "MessagePack for C#",
+      "version": version.split(".")[0..2].join("."),
+      "unity": "2018.2",
+      "description": "",
+      "keywords": [""],
+      "category": "",
+      "dependencies": { }
+    })
+    File.write "MessagePack/package.json.meta", gen_meta("10c1f8cd9a685944ebcd9940476e4021")
+    File.write "MessagePack/MessagePack.asmdef", JSON.generate({
+      "name": "MessagePack",
+      "references": [],
+      "includePlatforms": [],
+      "excludePlatforms": []
+    })
+    File.write "MessagePack/MessagePack.asmdef.meta", gen_meta("6605f65b38e65ea4a8c3a3ff047737d0")
+    puts `cd MessagePack && git add . && git commit -m "Update #{version}" && git tag -f v#{version} && git push -f origin v#{version} && git push -f origin v#{version}:master`
+  end
 end
 
 App.start

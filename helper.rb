@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "zip"
 require 'rubygems/package'
 require 'zlib'
 require "open-uri"
@@ -12,7 +13,13 @@ end
 
 module Helper
   def extract_unitypackage(file, dest)
-    gzip_reader = Zlib::GzipReader.open(open(file))
+    io = file.kind_of?(IO) ? file : open(file)
+    
+    buffer = StringIO.new
+    IO.copy_stream(io, buffer)
+    buffer.rewind
+
+    gzip_reader = Zlib::GzipReader.new(buffer)
 
     tar_reader = Gem::Package::TarReader.new(gzip_reader)
 
@@ -44,6 +51,16 @@ module Helper
     end
     tar_reader.close
     gzip_reader.close
+  end
+
+  def extract_zipped_unitypackage(file, dest)
+    Zip::File.open(open(file)) do |zip|
+      zip.each do |entry|
+        if entry.name.end_with? ".unitypackage"
+          extract_unitypackage(entry.get_input_stream, dest)
+        end
+      end
+    end
   end
 
   def gen_meta(guid)
